@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { SharedData } from '@/types';
 import { store as storeCartItem, update as updateCartItem, destroy as destroyCartItem } from '@/routes/cart-items';
+import { store as storeCheckout } from '@/routes/checkout';
 
 interface Product {
     id: number;
@@ -152,6 +153,10 @@ export default function ShopIndex() {
         router.delete(destroyCartItem({ cartItem: itemId }),
             { preserveScroll: true },
         );
+    }, []);
+
+    const handleCheckout = useCallback(() => {
+        router.post(storeCheckout(), {}, { preserveScroll: true },);
     }, []);
 
     return (
@@ -394,6 +399,7 @@ export default function ShopIndex() {
                                 <Button
                                     className="w-full"
                                     disabled={cartItemsCount === 0}
+                                    onClick={handleCheckout}
                                 >
                                     Checkout
                                 </Button>

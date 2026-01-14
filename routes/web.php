@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CartItemController;
+use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\ShopController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -19,6 +20,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::patch('/{cartItem}', 'update')->name('cart-items.update');
         Route::delete('/{cartItem}', 'destroy')->name('cart-items.destroy');
     });
+    Route::post('checkout', [CheckoutController::class, 'store'])->name('checkout.store');
 });
 
 require __DIR__.'/settings.php';
