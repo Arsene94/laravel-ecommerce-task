@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Controllers\CartItemController;
+use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\ShopController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -11,9 +14,13 @@ Route::get('/', function () {
 })->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/shop', function () {
-        return Inertia::render('shop/index', []);
+    Route::get('/shop', [ShopController::class, 'index'])->name('shop.index');
+    Route::controller(CartItemController::class)->prefix('cart-items')->group(function () {
+        Route::post('/', 'store')->name('cart-items.store');
+        Route::patch('/{cartItem}', 'update')->name('cart-items.update');
+        Route::delete('/{cartItem}', 'destroy')->name('cart-items.destroy');
     });
+    Route::post('checkout', [CheckoutController::class, 'store'])->name('checkout.store');
 });
 
 require __DIR__.'/settings.php';

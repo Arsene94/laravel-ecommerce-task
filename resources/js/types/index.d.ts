@@ -22,6 +22,11 @@ export interface NavItem {
     isActive?: boolean;
 }
 
+export interface FlashMessage {
+    success?: string;
+    error?: string;
+}
+
 export interface SharedData {
     name: string;
     auth: Auth;
