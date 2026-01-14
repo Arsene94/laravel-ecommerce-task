@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CartItemController;
 use App\Http\Controllers\ShopController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -13,6 +14,9 @@ Route::get('/', function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/shop', [ShopController::class, 'index'])->name('shop.index');
+    Route::controller(CartItemController::class)->prefix('cart-items')->group(function () {
+        Route::post('/', 'store')->name('cart-items.store');
+    });
 });
 
 require __DIR__.'/settings.php';
