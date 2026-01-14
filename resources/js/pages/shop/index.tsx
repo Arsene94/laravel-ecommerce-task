@@ -1,9 +1,15 @@
 import AppLayout from '@/layouts/app-layout';
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { ShoppingBag, ShoppingCart, Sparkles, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from 'react';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { FlashMessage, SharedData } from '@/types';
@@ -17,21 +23,38 @@ interface Product {
     stock_quantity: number;
 }
 
+interface PaginatedProducts {
+    data: Product[];
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+    from: number | null;
+    to: number | null;
+    first_page_url: string;
+    last_page_url: string;
+    prev_page_url: string | null;
+    next_page_url: string | null;
+}
+
 interface CartItem {
     id: number;
     quantity: number;
     product: Product
 }
 
+type SortOption = 'name-asc' | 'name-desc' | 'price-asc' | 'price-desc';
+
 interface ShopPageProps extends SharedData {
-    products: Product[];
+    products: PaginatedProducts;
     cartItems: CartItem[];
     lowStockThreshold: number;
+    sort: SortOption;
     flash?: FlashMessage;
 }
 
 export default function ShopIndex() {
-    const { products, cartItems, lowStockThreshold, flash } = usePage<ShopPageProps>().props;
+    const { products, cartItems, lowStockThreshold, flash, sort } = usePage<ShopPageProps>().props;
     const [quantitiesOverrides, setQuantityOverrides] = useState<Record<number, number>>({});
     const [cartQuantityOverrides, setCartQuantityOverrides] = useState<Record<number, number>>({});
     const [isCartOpen, setIsCartOpen] = useState(false);
@@ -52,7 +75,7 @@ export default function ShopIndex() {
     }, [cartItems]);
 
     const quantities = useMemo(() => {
-        const defaults = products.reduce<Record<number, number>>((accumulator, product) => {
+        const defaults = products.data.reduce<Record<number, number>>((accumulator, product) => {
             accumulator[product.id] = 1;
             return accumulator;
         }, {});
@@ -61,7 +84,7 @@ export default function ShopIndex() {
             ...defaults,
             ...quantitiesOverrides
         };
-    }, [products, quantitiesOverrides]);
+    }, [products.data, quantitiesOverrides]);
 
     const cartQuantities = useMemo(() => {
         const defaults = cartItems.reduce<Record<number, number>>((accumulator, item) => {
@@ -84,6 +107,14 @@ export default function ShopIndex() {
     const cartItemsCount = useMemo(() => {
         return Object.values(cartQuantities).reduce((total, quantity) => total+ quantity, 0);
     }, [cartQuantities]);
+
+    const handleSortChange = useCallback((nextSort: SortOption) => {
+        router.get(
+            '/shop',
+            { sort: nextSort, page: 1 },
+            { preserveScroll: true, preserveState: true, replace: true }
+        );
+    }, [])
 
     const clampQuantity = useCallback((value: number, max: number) => {
         if (Number.isNaN(value)) {
@@ -158,7 +189,43 @@ export default function ShopIndex() {
 
     const handleCheckout = useCallback(() => {
         router.post(storeCheckout(), {}, { preserveScroll: true },);
-    }, []);
+        closeCart();
+    }, [closeCart]);
+
+    const pageItems = useMemo(() => {
+        const items: Array<
+            { type: 'page'; page: number } | { type: 'ellipsis'; key: string }
+        > = [];
+        const lastPage = products.last_page;
+        const currentPage = products.current_page;
+
+        if (lastPage <= 1) {
+            return items;
+        }
+
+        items.push({ type: 'page', page: 1 });
+
+        const startPage =
+            currentPage <= 3 ? 2 : Math.max(2, Math.min(currentPage - 1, lastPage - 2));
+        const endPage =
+            currentPage <= 3 ? Math.min(3, lastPage - 1) : Math.min(currentPage + 1, lastPage - 1);
+
+        if (startPage > 2) {
+            items.push({ type: 'ellipsis', key: 'start' });
+        }
+
+        for (let page = startPage; page <= endPage; page += 1) {
+            items.push({ type: 'page', page });
+        }
+
+        if (endPage < lastPage - 1) {
+            items.push({ type: 'ellipsis', key: 'end' });
+        }
+
+        items.push({ type: 'page', page: lastPage });
+
+        return items;
+    }, [products.current_page, products.last_page]);
 
     return (
         <AppLayout>
@@ -234,16 +301,31 @@ export default function ShopIndex() {
                                 and typesetting industry.
                             </p>
                         </div>
+                        <div className="flex flex-wrap items-center gap-3">
+                            <div className="flex items-center gap-2 text-sm text-slate-500">
+                                <span>Sort by</span>
+                                <select
+                                    value={sort}
+                                    onChange={(e) => handleSortChange(e.target.value as SortOption)}
+                                    className="rounded-full border border-slate-200 bg-white px-3 py-1 text-sm text-slate-700 shadow-sm focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                                >
+                                    <option value="name-asc">Name (A-Z)</option>
+                                    <option value="name-desc">Name (Z-A)</option>
+                                    <option value="price-asc">Price (low to high)</option>
+                                    <option value="price-desc">Price (high to low)</option>
+                                </select>
+                            </div>
+                        </div>
                         <Badge
                             variant="secondary"
                             className="flex w-fit items-center gap-2"
                         >
                             <ShoppingBag className="h-4 w-4" />
-                            {products.length} items
+                            {products.total} items
                         </Badge>
                     </div>
                     <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-                        {products.map((product) => {
+                        {products.data.map((product) => {
                             const isLowStock =
                                 product.stock_quantity <= lowStockThreshold;
                             const isOutOfStock = product.stock_quantity === 0;
@@ -268,7 +350,7 @@ export default function ShopIndex() {
                                                     ? 'destructive'
                                                     : 'outline'
                                             }
-                                            className="text-sm"
+                                            className={`text-sm ${isLowStock ? 'dark:text-white' : 'dark:text-slate-500'}`}
                                         >
                                             {isOutOfStock
                                                 ? 'Out of stock'
@@ -294,12 +376,12 @@ export default function ShopIndex() {
                                             onChange={(e) =>
                                                 handleQuantityChange(product.id, Number(e.target.value), product.stock_quantity)
                                             }
-                                            className="h-9 w-14 text-center"
+                                            className="h-9 w-14 text-center dark:text-slate-500"
                                             disabled={isOutOfStock}
                                         />
                                         <Button
                                             type="button"
-                                            className="flex-1"
+                                            className="flex-1 dark:bg-slate-500 dark:text-white"
                                             onClick={() =>
                                                 handleAddToCart(product.id)
                                             }
@@ -313,6 +395,84 @@ export default function ShopIndex() {
                             );
                         })}
                     </div>
+                    {products.last_page > 1 && (
+                        <div className="flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                            <p className="text-xs text-slate-500">
+                                Showing {products.from ?? 0}–{products.to ?? 0} of {products.total} products
+                            </p>
+                            <div className="flex flex-wrap items-center gap-2 text-sm">
+                                <Link
+                                    href={products.first_page_url}
+                                    className={`rounded-full border px-3 py-1 text-sm transition ${
+                                        products.current_page === 1
+                                            ? 'pointer-events-none border-slate-200 text-slate-300'
+                                            : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-900'
+                                    }`}
+                                >
+                                    &laquo; First
+                                </Link>
+                                <Link
+                                    href={products.prev_page_url ?? '#'}
+                                    className={`rounded-full border px-3 py-1 text-sm transition ${
+                                        products.prev_page_url
+                                            ? 'border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-900'
+                                            : 'pointer-events-none border-slate-200 text-slate-300'
+                                    }`}
+                                >
+                                    &lsaquo; Prev
+                                </Link>
+                                <div className="flex flex-wrap items-center gap-2">
+                                    {pageItems.map((item) => {
+                                        if (item.type === 'ellipsis') {
+                                            return (
+                                                <span
+                                                    key={item.key}
+                                                    className="px-2 text-slate-400"
+                                                >
+                                                    ...
+                                                </span>
+                                            );
+                                        }
+
+                                        const isActive = item.page === products.current_page;
+                                        return (
+                                            <Link
+                                                key={item.page}
+                                                href={`/shop?page=${item.page}&sort=${sort}`}
+                                                className={`rounded-full border px-3 py-1 text-sm transition ${
+                                                    isActive
+                                                        ? 'border-slate-900 bg-slate-900 text-white'
+                                                        : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-900'
+                                                }`}
+                                            >
+                                                {item.page}
+                                            </Link>
+                                        );
+                                    })}
+                                </div>
+                                <Link
+                                    href={products.next_page_url ?? '#'}
+                                    className={`rounded-full border px-3 py-1 text-sm transition ${
+                                        products.next_page_url
+                                            ? 'border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-900'
+                                            : 'pointer-events-none border-slate-200 text-slate-300'
+                                    }`}
+                                >
+                                    Next &rsaquo;
+                                </Link>
+                                <Link
+                                    href={products.last_page_url}
+                                    className={`rounded-full border px-3 py-1 text-sm transition ${
+                                        products.current_page === products.last_page
+                                            ? 'pointer-events-none border-slate-200 text-slate-300'
+                                            : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-900'
+                                    }`}
+                                >
+                                    Last &raquo;
+                                </Link>
+                            </div>
+                        </div>
+                    )}
                 </section>
             </div>
 
