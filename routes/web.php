@@ -17,6 +17,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::controller(CartItemController::class)->prefix('cart-items')->group(function () {
         Route::post('/', 'store')->name('cart-items.store');
         Route::patch('/{cartItem}', 'update')->name('cart-items.update');
+        Route::delete('/{cartItem}', 'destroy')->name('cart-items.destroy');
     });
 });
 

@@ -39,9 +39,7 @@ class CartItemController extends Controller
 
     public function update(Request $request, CartItem $cartItem): RedirectResponse
     {
-        if ($cartItem->user_id !== $request->user()->id) {
-            abort(403);
-        }
+        $this->authorizeCartItem($request, $cartItem);
 
         $validated = $request->validate([
             'quantity' => 'required|integer|min:1',
@@ -58,5 +56,21 @@ class CartItemController extends Controller
         $cartItem->update($validated);
 
         return back()->with('success', 'Cart updated!');
+    }
+
+    public function destroy(Request $request, CartItem $cartItem): RedirectResponse
+    {
+        $this->authorizeCartItem($request, $cartItem);
+
+        $cartItem->delete();
+
+        return back()->with('success', 'Item removed from cart!');
+    }
+
+    private function authorizeCartItem(Request $request, CartItem $cartItem)
+    {
+        if ($cartItem->user_id !== $request->user()->id) {
+            abort(403);
+        }
     }
 }

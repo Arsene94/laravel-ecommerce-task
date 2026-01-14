@@ -7,7 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { SharedData } from '@/types';
-import { store as storeCartItem, update as updateCartItem } from '@/routes/cart-items';
+import { store as storeCartItem, update as updateCartItem, destroy as destroyCartItem } from '@/routes/cart-items';
 
 interface Product {
     id: number;
@@ -143,6 +143,16 @@ export default function ShopIndex() {
             handleCartUpdate(itemId, nextValue)
         });
     }, [clampQuantity, handleCartUpdate]);
+
+    const handleRemoveFromCart = useCallback((itemId: number) => {
+        if (cartUpdateTimers.current[itemId]) {
+            clearTimeout(cartUpdateTimers.current[itemId]);
+        }
+
+        router.delete(destroyCartItem({ cartItem: itemId }),
+            { preserveScroll: true },
+        );
+    }, []);
 
     return (
         <AppLayout>
@@ -339,9 +349,10 @@ export default function ShopIndex() {
                                                 </p>
                                             </div>
                                             <Button
+                                                className="bg-red-500 text-white hover:bg-red-700"
                                                 variant="ghost"
                                                 size="sm"
-                                                className="bg-red-500 text-white hover:bg-red-700"
+                                                onClick={() => handleRemoveFromCart(item.id)}
                                             >
                                                 Remove
                                             </Button>
