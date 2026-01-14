@@ -16,6 +16,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/shop', [ShopController::class, 'index'])->name('shop.index');
     Route::controller(CartItemController::class)->prefix('cart-items')->group(function () {
         Route::post('/', 'store')->name('cart-items.store');
+        Route::patch('/{cartItem}', 'update')->name('cart-items.update');
     });
 });
 

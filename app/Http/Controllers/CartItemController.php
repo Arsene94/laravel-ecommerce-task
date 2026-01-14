@@ -18,7 +18,7 @@ class CartItemController extends Controller
         ]);
 
         $product = Product::findOrFail($validated['product_id']);
-        $cartItem = CartItem::query()->findOrNew([
+        $cartItem = CartItem::firstOrNew([
             'user_id' => $request->user()->id,
             'product_id' => $product->id,
         ]);
@@ -35,5 +35,28 @@ class CartItemController extends Controller
         $cartItem->save();
 
         return back()->with('success', 'Item added to cart!');
+    }
+
+    public function update(Request $request, CartItem $cartItem): RedirectResponse
+    {
+        if ($cartItem->user_id !== $request->user()->id) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'quantity' => 'required|integer|min:1',
+        ]);
+
+        $product = $cartItem->product()->firstOrFail();
+
+        if ($validated['quantity'] > $product->stock_quantity) {
+            throw ValidationException::withMessages([
+                'quantity' => 'Only '.$product->stock_quantity.' left in stock!',
+            ]);
+        }
+
+        $cartItem->update($validated);
+
+        return back()->with('success', 'Cart updated!');
     }
 }
