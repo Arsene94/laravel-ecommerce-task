@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ShopController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -11,9 +12,7 @@ Route::get('/', function () {
 })->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/shop', function () {
-        return Inertia::render('shop/index', []);
-    });
+    Route::get('/shop', [ShopController::class, 'index'])->name('shop.index');
 });
 
 require __DIR__.'/settings.php';
