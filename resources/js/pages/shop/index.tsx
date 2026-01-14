@@ -3,7 +3,7 @@ import { Head } from '@inertiajs/react';
 import { ShoppingBag, ShoppingCart, Sparkles, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -16,6 +16,8 @@ interface Products {
 }
 
 export default function ShopIndex() {
+    const [isCartOpen, setIsCartOpen] = useState(false);
+
     const products: Products[] = [
         {
             id: 1,
@@ -57,6 +59,9 @@ export default function ShopIndex() {
 
     const formatPrice = useCallback((value: number) => `€${value.toFixed(2)}`, []);
 
+    const openCart = useCallback(() => setIsCartOpen(true), []);
+    const closeCart = useCallback(() => setIsCartOpen(false), []);
+
     return (
         <AppLayout>
             <Head title="Shop" />
@@ -93,7 +98,8 @@ export default function ShopIndex() {
                                 type="button"
                                 variant="secondary"
                                 className="rounded-full bg-white/15 text-white hover:bg-white/25"
-                                >
+                                onClick={openCart}
+                            >
                                 <ShoppingCart className="w-5 h-5" />
                             </Button>
                         </div>
@@ -168,95 +174,98 @@ export default function ShopIndex() {
                 </section>
             </div>
 
-            <div className="fixed inset-0 z-50">
-                <div
+            {isCartOpen && (
+                <div className="fixed inset-0 z-50">
+                    <div
+                        className="absolute inset-0 bg-slate-900/60"
+                        onClick={closeCart}
+                    />
 
-                    className="absolute inset-0 bg-slate-900/60"
-                />
-
-                <div className="absolute right-0 top-0 flex w-full max-w-md h-full flex-col bg-white shadow-xl">
-                    <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5">
-                        <div>
-                            <p className="text-sm uppercase tracking-[0.2em] text-slate-400">Your cart</p>
-                            <h2 className="text-lg font-semibold text-slate-900">
-                                5 items selected
-                            </h2>
-                        </div>
-                        <Button
-                            type="button"
-                            variant="ghost"
-                        >
-                            <X className="w-5 h-5" />
-                        </Button>
-                    </div>
-
-                    <div className="flex-1 space-y-3 overflow-y-auto px-6 py-5">
-                        <Card>
-                            <CardContent className="py-6 text-sm text-slate-500">
-                                Your cart is empty. Add products to get started.
-                            </CardContent>
-                        </Card>
-
-                        {products.map((item) => (
-                            <Card key={item.id} className="border-slate-200">
-                                <CardContent className="space-y-4 py-4">
-                                    <div className="flex items-start justify-between">
-                                        <div>
-                                            <p className="font-medium text-slate-900">
-                                                {item.name}
-                                            </p>
-                                            <p className="text-sm text-slate-500">
-                                                {formatPrice(item.price)}
-                                            </p>
-                                        </div>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="bg-red-500 hover:bg-red-700 text-white"
-                                        >
-                                            Remove
-                                        </Button>
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <Input
-                                                type="number"
-                                                min={1}
-                                                max={item.stock_quantity}
-                                                value="1"
-                                                className="h-9 w-14 text-center"
-                                            />
-                                            <span className="text-xs text-slate-500">
-                                                of {item.stock_quantity}
-                                            </span>
-                                        </div>
-                                        <span className="text-sm font-semibold">
-                                            {formatPrice(item.price)}
-                                        </span>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
-                    <div className="border-t border-slate-200 px-6 py-5">
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between text-sm text-slate-500">
-                                <span>Subtotal</span>
-                                <span>{formatPrice(200)}</span>
-                            </div>
-                            <div className="flex items-center justify-between text-base font-semibold text-slate-900">
-                                <span>Total</span>
-                                <span>{formatPrice(200)}</span>
+                    <div className="absolute right-0 top-0 flex w-full max-w-md h-full flex-col bg-white shadow-xl">
+                        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5">
+                            <div>
+                                <p className="text-sm uppercase tracking-[0.2em] text-slate-400">Your cart</p>
+                                <h2 className="text-lg font-semibold text-slate-900">
+                                    5 items selected
+                                </h2>
                             </div>
                             <Button
-                                className="w-full"
+                                type="button"
+                                variant="ghost"
+                                onClick={closeCart}
                             >
-                                Checkout
+                                <X className="w-5 h-5" />
                             </Button>
+                        </div>
+
+                        <div className="flex-1 space-y-3 overflow-y-auto px-6 py-5">
+                            <Card>
+                                <CardContent className="py-6 text-sm text-slate-500">
+                                    Your cart is empty. Add products to get started.
+                                </CardContent>
+                            </Card>
+
+                            {products.map((item) => (
+                                <Card key={item.id} className="border-slate-200">
+                                    <CardContent className="space-y-4 py-4">
+                                        <div className="flex items-start justify-between">
+                                            <div>
+                                                <p className="font-medium text-slate-900">
+                                                    {item.name}
+                                                </p>
+                                                <p className="text-sm text-slate-500">
+                                                    {formatPrice(item.price)}
+                                                </p>
+                                            </div>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="bg-red-500 hover:bg-red-700 text-white"
+                                            >
+                                                Remove
+                                            </Button>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <Input
+                                                    type="number"
+                                                    min={1}
+                                                    max={item.stock_quantity}
+                                                    value="1"
+                                                    className="h-9 w-14 text-center"
+                                                />
+                                                <span className="text-xs text-slate-500">
+                                                of {item.stock_quantity}
+                                            </span>
+                                            </div>
+                                            <span className="text-sm font-semibold">
+                                            {formatPrice(item.price)}
+                                        </span>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                        <div className="border-t border-slate-200 px-6 py-5">
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between text-sm text-slate-500">
+                                    <span>Subtotal</span>
+                                    <span>{formatPrice(200)}</span>
+                                </div>
+                                <div className="flex items-center justify-between text-base font-semibold text-slate-900">
+                                    <span>Total</span>
+                                    <span>{formatPrice(200)}</span>
+                                </div>
+                                <Button
+                                    className="w-full"
+                                >
+                                    Checkout
+                                </Button>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            )}
         </AppLayout>
     );
 }
