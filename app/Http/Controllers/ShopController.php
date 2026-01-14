@@ -15,8 +15,11 @@ class ShopController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'price', 'stock_quantity']);
 
+        $lowStockThreshold = (int) config('shop.low_stock_threshold');
+
         return Inertia::render('shop/index', [
             'products' => $products,
+            'lowStockThreshold' => $lowStockThreshold,
         ]);
     }
 }

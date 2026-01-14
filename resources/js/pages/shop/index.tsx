@@ -1,11 +1,12 @@
 import AppLayout from '@/layouts/app-layout';
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import { ShoppingBag, ShoppingCart, Sparkles, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useCallback, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
+import { SharedData } from '@/types';
 
 
 interface Products {
@@ -15,47 +16,14 @@ interface Products {
     stock_quantity: number;
 }
 
-export default function ShopIndex() {
-    const [isCartOpen, setIsCartOpen] = useState(false);
+interface ShopPageProps extends SharedData {
+    products: Products[];
+    lowStockThreshold: number;
+}
 
-    const products: Products[] = [
-        {
-            id: 1,
-            name: 'Product 1',
-            price: 10,
-            stock_quantity: 5,
-        },
-        {
-            id: 2,
-            name: 'Product 2',
-            price: 10,
-            stock_quantity: 10,
-        },
-        {
-            id: 3,
-            name: 'Product 3',
-            price: 10,
-            stock_quantity: 7,
-        },
-        {
-            id: 4,
-            name: 'Product 4',
-            price: 10,
-            stock_quantity: 5,
-        },
-        {
-            id: 5,
-            name: 'Product 5',
-            price: 10,
-            stock_quantity: 0,
-        },
-        {
-            id: 6,
-            name: "Product 6",
-            price: 10,
-            stock_quantity: 0,
-        }
-    ];
+export default function ShopIndex() {
+    const { products, lowStockThreshold } = usePage<ShopPageProps>().props;
+    const [isCartOpen, setIsCartOpen] = useState(false);
 
     const formatPrice = useCallback((value: number) => `€${value.toFixed(2)}`, []);
 
@@ -121,6 +89,7 @@ export default function ShopIndex() {
                     </div>
                     <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
                         {products.map((product) => {
+                            const isLowStock = product.stock_quantity <= lowStockThreshold;
                             const isOutOfStock = product.stock_quantity === 0;
 
                             return (
@@ -137,8 +106,9 @@ export default function ShopIndex() {
                                                 {product.name}
                                             </p>
                                         </div>
-                                        <Badge variant="outline" className="text-sm">
-                                            {isOutOfStock ? 'Out of stock' : 'In stock'}
+                                        <Badge
+                                            variant={isLowStock ? 'destructive' : 'outline'} className="text-sm">
+                                            {isOutOfStock ? 'Out of stock' : isLowStock ? 'Low stock' : 'In stock'}
                                         </Badge>
                                     </div>
                                     <div className="mt-4 flex items-center justify-between text-sm">
