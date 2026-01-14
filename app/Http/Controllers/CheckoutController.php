@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\SendLowStockNotification;
 use App\Models\Order;
 use App\Models\Product;
 use Illuminate\Http\RedirectResponse;
@@ -53,7 +54,7 @@ class CheckoutController extends Controller
                 $lowStockThreshold = (int) config('shop.low_stock_threshold');
 
                 if ($product->stock_quantity <= $lowStockThreshold) {
-                    // TODO: create low stock notification
+                    SendLowStockNotification::dispatch($product);
                 }
             }
 
