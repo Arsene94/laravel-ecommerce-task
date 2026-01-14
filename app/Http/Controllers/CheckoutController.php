@@ -18,7 +18,7 @@ class CheckoutController extends Controller
         $cartItems = $user->cartItems()->with('product')->get();
 
         if ($cartItems->isEmpty()) {
-            return back()->withErrors(['Your cart is empty!']);
+            return back()->with('error', 'Your cart is empty!');
         }
 
         DB::transaction(function () use ($cartItems, $user): void {
@@ -44,9 +44,9 @@ class CheckoutController extends Controller
                 $product->decrement('stock_quantity', $cartItem->quantity);
 
                 $order->items()->create([
-                    'product_id' => $product->product_id,
-                    'quantity' => $product->quantity,
-                    'unit_price' => $product->product->price,
+                    'product_id' => $product->id,
+                    'quantity' => $cartItem->quantity,
+                    'unit_price' => $product->price,
                 ]);
 
                 $total += $cartItem->quantity * $product->price;

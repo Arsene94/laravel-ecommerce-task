@@ -15,7 +15,7 @@ class LowStockAlert extends Mailable
 
     public function build(): self
     {
-        return $this->subject('Low Stock Alert: ' . $this->product->name)
-            ->view('emails.low-stock');
+        return $this->subject('Low Stock Alert: '.$this->product->name)
+            ->view('email.low-stock');
     }
 }

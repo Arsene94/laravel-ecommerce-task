@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
-import { SharedData } from '@/types';
+import { FlashMessage, SharedData } from '@/types';
 import { store as storeCartItem, update as updateCartItem, destroy as destroyCartItem } from '@/routes/cart-items';
 import { store as storeCheckout } from '@/routes/checkout';
 
@@ -27,10 +27,11 @@ interface ShopPageProps extends SharedData {
     products: Product[];
     cartItems: CartItem[];
     lowStockThreshold: number;
+    flash?: FlashMessage;
 }
 
 export default function ShopIndex() {
-    const { products, cartItems, lowStockThreshold } = usePage<ShopPageProps>().props;
+    const { products, cartItems, lowStockThreshold, flash } = usePage<ShopPageProps>().props;
     const [quantitiesOverrides, setQuantityOverrides] = useState<Record<number, number>>({});
     const [cartQuantityOverrides, setCartQuantityOverrides] = useState<Record<number, number>>({});
     const [isCartOpen, setIsCartOpen] = useState(false);
@@ -209,6 +210,18 @@ export default function ShopIndex() {
                         </div>
                     </div>
                 </section>
+
+                {flash?.success && (
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                        {flash.success}
+                    </div>
+                )}
+
+                {flash?.error && (
+                    <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                        {flash.error}
+                    </div>
+                )}
 
                 <section className="space-y-6">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">

@@ -9,10 +9,19 @@ use Inertia\Response;
 
 class ShopController extends Controller
 {
+    private const SORT_OPTIONS = [
+        'name-asc' => ['name', 'asc'],
+        'name-desc' => ['name', 'desc'],
+        'price-asc' => ['price', 'asc'],
+        'price-desc' => ['price', 'desc'],
+    ];
     public function index(Request $request): Response
     {
+        $sort = $request->string('sort')->toString();
+        $sortConfig = self::SORT_OPTIONS[$sort] ?? self::SORT_OPTIONS['name-asc'];
+
         $products = Product::query()
-            ->orderBy('name')
+            ->orderBy($sortConfig[0], $sortConfig[1])
             ->get(['id', 'name', 'price', 'stock_quantity']);
 
         $cartItems = $request->user()
