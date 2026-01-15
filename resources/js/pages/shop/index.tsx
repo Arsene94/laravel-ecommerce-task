@@ -192,40 +192,29 @@ export default function ShopIndex() {
         closeCart();
     }, [closeCart]);
 
-    const pageItems = useMemo(() => {
-        const items: Array<
-            { type: 'page'; page: number } | { type: 'ellipsis'; key: string }
-        > = [];
-        const lastPage = products.last_page;
-        const currentPage = products.current_page;
+    const pageItems = useMemo(
+        () => getPaginationModel(products.current_page, products.last_page),
+        [products.current_page, products.last_page],
+    );
 
-        if (lastPage <= 1) {
-            return items;
+    const getPageLinkClass = (
+        isActive: boolean,
+        isDisabled: boolean = false,
+    ) => `
+        rounded-full border px-3 py-1 text-sm transition
+        ${
+            isDisabled
+                ? 'pointer-events-none border-slate-200 text-slate-300'
+                : isActive
+                  ? 'border-slate-900 bg-slate-900 text-white'
+                  : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-900'
         }
+    `;
 
-        items.push({ type: 'page', page: 1 });
-
-        const startPage =
-            currentPage <= 3 ? 2 : Math.max(2, Math.min(currentPage - 1, lastPage - 2));
-        const endPage =
-            currentPage <= 3 ? Math.min(3, lastPage - 1) : Math.min(currentPage + 1, lastPage - 1);
-
-        if (startPage > 2) {
-            items.push({ type: 'ellipsis', key: 'start' });
-        }
-
-        for (let page = startPage; page <= endPage; page += 1) {
-            items.push({ type: 'page', page });
-        }
-
-        if (endPage < lastPage - 1) {
-            items.push({ type: 'ellipsis', key: 'end' });
-        }
-
-        items.push({ type: 'page', page: lastPage });
-
-        return items;
-    }, [products.current_page, products.last_page]);
+    const pageHref = useCallback(
+        (page: number) => `/shop?page=${page}&sort=${encodeURIComponent(sort)}`,
+        [sort],
+    );
 
     return (
         <AppLayout>
@@ -306,13 +295,23 @@ export default function ShopIndex() {
                                 <span>Sort by</span>
                                 <select
                                     value={sort}
-                                    onChange={(e) => handleSortChange(e.target.value as SortOption)}
-                                    className="rounded-full border border-slate-200 bg-white px-3 py-1 text-sm text-slate-700 shadow-sm focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                                    onChange={(e) =>
+                                        handleSortChange(
+                                            e.target.value as SortOption,
+                                        )
+                                    }
+                                    className="rounded-full border border-slate-200 bg-white px-3 py-1 text-sm text-slate-700 shadow-sm focus:border-slate-300 focus:ring-2 focus:ring-slate-200 focus:outline-none"
                                 >
                                     <option value="name-asc">Name (A-Z)</option>
-                                    <option value="name-desc">Name (Z-A)</option>
-                                    <option value="price-asc">Price (low to high)</option>
-                                    <option value="price-desc">Price (high to low)</option>
+                                    <option value="name-desc">
+                                        Name (Z-A)
+                                    </option>
+                                    <option value="price-asc">
+                                        Price (low to high)
+                                    </option>
+                                    <option value="price-desc">
+                                        Price (high to low)
+                                    </option>
                                 </select>
                             </div>
                         </div>
@@ -374,7 +373,11 @@ export default function ShopIndex() {
                                             max={product.stock_quantity}
                                             value={quantities[product.id] ?? 1}
                                             onChange={(e) =>
-                                                handleQuantityChange(product.id, Number(e.target.value), product.stock_quantity)
+                                                handleQuantityChange(
+                                                    product.id,
+                                                    Number(e.target.value),
+                                                    product.stock_quantity,
+                                                )
                                             }
                                             className="h-9 w-14 text-center dark:text-slate-500"
                                             disabled={isOutOfStock}
@@ -398,77 +401,56 @@ export default function ShopIndex() {
                     {products.last_page > 1 && (
                         <div className="flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
                             <p className="text-xs text-slate-500">
-                                Showing {products.from ?? 0}–{products.to ?? 0} of {products.total} products
+                                Showing {products.from ?? 0}–{products.to ?? 0}{' '}
+                                of {products.total} products
                             </p>
+
                             <div className="flex flex-wrap items-center gap-2 text-sm">
-                                <Link
-                                    href={products.first_page_url}
-                                    className={`rounded-full border px-3 py-1 text-sm transition ${
-                                        products.current_page === 1
-                                            ? 'pointer-events-none border-slate-200 text-slate-300'
-                                            : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-900'
-                                    }`}
-                                >
-                                    &laquo; First
-                                </Link>
+                                {/* Prev Button */}
                                 <Link
                                     href={products.prev_page_url ?? '#'}
-                                    className={`rounded-full border px-3 py-1 text-sm transition ${
-                                        products.prev_page_url
-                                            ? 'border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-900'
-                                            : 'pointer-events-none border-slate-200 text-slate-300'
-                                    }`}
+                                    className={getPageLinkClass(
+                                        false,
+                                        !products.prev_page_url,
+                                    )}
                                 >
                                     &lsaquo; Prev
                                 </Link>
-                                <div className="flex flex-wrap items-center gap-2">
-                                    {pageItems.map((item) => {
-                                        if (item.type === 'ellipsis') {
-                                            return (
-                                                <span
-                                                    key={item.key}
-                                                    className="px-2 text-slate-400"
-                                                >
-                                                    ...
-                                                </span>
-                                            );
-                                        }
 
-                                        const isActive = item.page === products.current_page;
-                                        return (
+                                {/* Pagination Items Loop */}
+                                <div className="flex flex-wrap items-center gap-2">
+                                    {pageItems.map((item) =>
+                                        item.type === 'ellipsis' ? (
+                                            <span
+                                                key={item.key}
+                                                className="px-2 text-slate-400"
+                                            >
+                                                ...
+                                            </span>
+                                        ) : (
                                             <Link
                                                 key={item.page}
-                                                href={`/shop?page=${item.page}&sort=${sort}`}
-                                                className={`rounded-full border px-3 py-1 text-sm transition ${
-                                                    isActive
-                                                        ? 'border-slate-900 bg-slate-900 text-white'
-                                                        : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-900'
-                                                }`}
+                                                href={pageHref(item.page)}
+                                                className={getPageLinkClass(
+                                                    item.page ===
+                                                        products.current_page,
+                                                )}
                                             >
                                                 {item.page}
                                             </Link>
-                                        );
-                                    })}
+                                        ),
+                                    )}
                                 </div>
+
+                                {/* Next Button */}
                                 <Link
                                     href={products.next_page_url ?? '#'}
-                                    className={`rounded-full border px-3 py-1 text-sm transition ${
-                                        products.next_page_url
-                                            ? 'border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-900'
-                                            : 'pointer-events-none border-slate-200 text-slate-300'
-                                    }`}
+                                    className={getPageLinkClass(
+                                        false,
+                                        !products.next_page_url,
+                                    )}
                                 >
                                     Next &rsaquo;
-                                </Link>
-                                <Link
-                                    href={products.last_page_url}
-                                    className={`rounded-full border px-3 py-1 text-sm transition ${
-                                        products.current_page === products.last_page
-                                            ? 'pointer-events-none border-slate-200 text-slate-300'
-                                            : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-900'
-                                    }`}
-                                >
-                                    Last &raquo;
                                 </Link>
                             </div>
                         </div>
@@ -506,7 +488,8 @@ export default function ShopIndex() {
                             {cartItemsCount === 0 && (
                                 <Card>
                                     <CardContent className="py-6 text-sm text-slate-500">
-                                        Your cart is empty. Add products to get started.
+                                        Your cart is empty. Add products to get
+                                        started.
                                     </CardContent>
                                 </Card>
                             )}
@@ -523,14 +506,21 @@ export default function ShopIndex() {
                                                     {item.product.name}
                                                 </p>
                                                 <p className="text-sm text-slate-500">
-                                                    {formatPrice(item.product.price)} each
+                                                    {formatPrice(
+                                                        item.product.price,
+                                                    )}{' '}
+                                                    each
                                                 </p>
                                             </div>
                                             <Button
                                                 className="bg-red-500 text-white hover:bg-red-700"
                                                 variant="ghost"
                                                 size="sm"
-                                                onClick={() => handleRemoveFromCart(item.id)}
+                                                onClick={() =>
+                                                    handleRemoveFromCart(
+                                                        item.id,
+                                                    )
+                                                }
                                             >
                                                 Remove
                                             </Button>
@@ -540,19 +530,41 @@ export default function ShopIndex() {
                                                 <Input
                                                     type="number"
                                                     min={1}
-                                                    max={item.product.stock_quantity}
-                                                    value={cartQuantities[item.id] ?? item.quantity}
+                                                    max={
+                                                        item.product
+                                                            .stock_quantity
+                                                    }
+                                                    value={
+                                                        cartQuantities[
+                                                            item.id
+                                                        ] ?? item.quantity
+                                                    }
                                                     onChange={(e) =>
-                                                        handleCartQuantityChange(item.id, Number(e.target.value), item.product.stock_quantity)
+                                                        handleCartQuantityChange(
+                                                            item.id,
+                                                            Number(
+                                                                e.target.value,
+                                                            ),
+                                                            item.product
+                                                                .stock_quantity,
+                                                        )
                                                     }
                                                     className="h-9 w-14 text-center"
                                                 />
                                                 <span className="text-xs text-slate-500">
-                                                    of {item.product.stock_quantity} available
+                                                    of{' '}
+                                                    {
+                                                        item.product
+                                                            .stock_quantity
+                                                    }{' '}
+                                                    available
                                                 </span>
                                             </div>
                                             <span className="text-sm font-semibold">
-                                                {formatPrice(item.quantity * item.product.price)}
+                                                {formatPrice(
+                                                    item.quantity *
+                                                        item.product.price,
+                                                )}
                                             </span>
                                         </div>
                                     </CardContent>
@@ -583,4 +595,40 @@ export default function ShopIndex() {
             )}
         </AppLayout>
     );
+}
+
+type PaginationItem =
+    | { type: 'page'; page: number }
+    | { type: 'ellipsis'; key: string };
+
+function getPaginationModel(currentPage: number, lastPage: number): PaginationItem[] {
+    if (lastPage <= 1) return [];
+
+    const items: PaginationItem[] = [];
+
+    items.push({ type: 'page', page: 1 });
+
+    const startPage = currentPage <= 3
+        ? 2
+        : Math.max(2, currentPage - 1);
+
+    const endPage = currentPage <= 3
+        ? Math.min(3, lastPage - 1)
+        : Math.min(currentPage + 1, lastPage - 1);
+
+    if (startPage > 2) {
+        items.push({ type: 'ellipsis', key: 'start-ellipsis' });
+    }
+
+    for (let page = startPage; page <= endPage; page++) {
+        items.push({ type: 'page', page });
+    }
+
+    if (endPage < lastPage - 1) {
+        items.push({ type: 'ellipsis', key: 'end-ellipsis' });
+    }
+
+    items.push({ type: 'page', page: lastPage });
+
+    return items;
 }

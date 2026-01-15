@@ -36,6 +36,7 @@ class ShopController extends Controller
             'products' => $products,
             'cartItems' => $cartItems,
             'lowStockThreshold' => $lowStockThreshold,
+            'sort' => $sort,
         ]);
     }
 }
